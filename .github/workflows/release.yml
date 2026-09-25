@@ -1,0 +1,63 @@
+name: Release Executável Windows
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Instalar dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Baixar modelos do MediaPipe (se não estiverem no repositório)
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "face_landmarker.task")) {
+            Invoke-WebRequest -Uri "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task" -OutFile "face_landmarker.task"
+          }
+          if (-not (Test-Path "hand_landmarker.task")) {
+            Invoke-WebRequest -Uri "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task" -OutFile "hand_landmarker.task"
+          }
+
+      - name: Compilar com PyInstaller
+        shell: pwsh
+        run: |
+          pyinstaller --noconfirm --onedir --windowed `
+            --name "ComandosReuniao" `
+            --add-data "face_landmarker.task;." `
+            --add-data "hand_landmarker.task;." `
+            --collect-all mediapipe `
+            --collect-all pyvirtualcam `
+            main.py
+
+      - name: Compactar build em ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive -Path dist/ComandosReuniao -DestinationPath ComandosReuniao-Windows-x64.zip
+
+      - name: Publicar Release no GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ComandosReuniao-Windows-x64.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

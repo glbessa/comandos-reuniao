@@ -1,0 +1,25 @@
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyInstaller builds e dists
+build/
+dist/
+*.spec
+
+# Modelos pesados do MediaPipe (baixados pelo workflow e localmente)
+*.task
+
+# Arquivo customizado local do usuário
+imagem_padrao.jpg
+*.zip
+
+# VS Code / IDEs
+.vscode/
+.idea/
